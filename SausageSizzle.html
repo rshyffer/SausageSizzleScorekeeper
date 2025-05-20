@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sausage Sizzle Score Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align items to the top */
+            min-height: 100vh;
+            padding: 20px; /* Add some padding around the content */
+        }
+        .container {
+            background-color: #ffffff; /* White background for the app container */
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 700px; /* Max width for the app */
+            position: relative; /* Needed for absolute positioning of keypad and restart button */
+        }
+        .animal-circle {
+            width: 80px; /* Size of the animal circles */
+            height: 80px;
+            border-radius: 50%; /* Make them round */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white; /* Text color */
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.3s ease, filter 0.3s ease; /* Smooth transitions */
+            margin: 10px; /* Spacing between circles */
+            border: 3px solid transparent; /* Border for selection */
+            user-select: none; /* Prevent text selection */
+        }
+        .animal-circle:hover:not(.used) {
+            transform: scale(1.05); /* Slightly enlarge on hover, but not for used animals */
+        }
+        .animal-circle.selected {
+            border-color: #4f46e5; /* Highlight color when selected */
+        }
+         .animal-circle.flipping {
+            animation: flip 0.6s ease forwards; /* Animation for flipping */
+        }
+        @keyframes flip {
+            0% { transform: rotateY(0deg); }
+            100% { transform: rotateY(180deg); }
+        }
+        .animal-circle.used {
+            filter: grayscale(100%); /* Black and white for used animals */
+            cursor: not-allowed; /* Indicate not clickable */
+        }
+        .animal-circle img {
+            width: 60px; /* Size of the animal image */
+            height: 60px;
+            object-fit: contain; /* Ensure image fits without distortion */
+        }
+         /* Styles for the score input area */
+        .score-input-area {
+            text-align: center;
+            margin-top: 20px;
+            position: relative; /* For keypad positioning */
+        }
+        .score-input-area input[type="number"] {
+            width: 120px; /* Wider input for score */
+            padding: 10px;
+            font-size: 2rem; /* Larger font size */
+            text-align: center;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            cursor: pointer; /* Indicate it's clickable */
+            -moz-appearance: textfield; /* Remove default number input arrows in Firefox */
+        }
+         /* Remove default number input arrows in Chrome, Safari, Edge, Opera */
+        .score-input-area input[type="number"]::-webkit-outer-spin-button,
+        .score-input-area input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* Styles for the pop-up keypad */
+        .keypad-popup {
+            position: absolute;
+            bottom: 100%; /* Position ABOVE the input field */
+            left: 50%;
+            transform: translateX(-50%); /* Center the keypad horizontally */
+            background-color: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            z-index: 10; /* Ensure it's above other content */
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 3 columns */
+            gap: 10px;
+            width: 200px; /* Fixed width for keypad */
+             margin-bottom: 10px; /* Add a little space between keypad and input */
+        }
+        .keypad-popup button {
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #e5e7eb; /* Light gray background for keys */
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            text-align: center;
+        }
+        .keypad-popup button:hover {
+            background-color: #d1d1d1; /* Slightly darker on hover */
+        }
+        .keypad-popup .key-clear,
+        .keypad-popup .key-backspace {
+            background-color: #fca5a5; /* Reddish background for clear/backspace */
+        }
+         .keypad-popup .key-clear:hover,
+        .keypad-popup .key-backspace:hover {
+            background-color: #f87171;
+        }
+
+        /* Styles for player list items (for drag and drop) */
+        .player-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #f3f4f6; /* Light gray background */
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: grab; /* Indicate draggable */
+            transition: background-color 0.2s ease;
+        }
+        .player-item:hover {
+             background-color: #e5e7eb; /* Darker on hover */
+        }
+        .player-item.dragging {
+            opacity: 0.5; /* Reduce opacity while dragging */
+        }
+        .player-item .delete-button {
+            background: none;
+            border: none;
+            color: #ef4444; /* Red color for delete icon */
+            cursor: pointer;
+            font-size: 1.2rem;
+            margin-left: 10px;
+        }
+         .player-item .delete-button:hover {
+            color: #dc2626; /* Darker red on hover */
+        }
+
+
+        .scoresheet-table {
+            width: 100%;
+            border-collapse: collapse; /* Remove space between borders */
+            margin-top: 20px;
+        }
+        .scoresheet-table th,
+        .scoresheet-table td {
+            border: 1px solid #d1d5db; /* Light gray border */
+            padding: 12px;
+            text-align: center;
+        }
+        .scoresheet-table th {
+            background-color: #f3f4f6; /* Light gray background for headers */
+            font-weight: bold;
+        }
+        .scoresheet-table tr:nth-child(even) {
+            background-color: #f9fafb; /* Slightly different background for even rows */
+        }
+        .scoresheet-table .total-row {
+            font-weight: bold;
+            background-color: #e5e7eb; /* Distinct background for total row */
+        }
+         /* Background colors for rows based on animal */
+        .row-crocodile { background-color: #dcfce7; /* Green */ }
+        .row-echidna { background-color: #e0f2fe; /* Blue */ }
+        .row-kangaroo { background-color: #fbd38d; /* Brown - using a different brown */ }
+        .row-quokka { background-color: #fef08a; /* Yellow */ }
+        .row-platypus { background-color: #fbcfe8; /* Pink - using a light pink */ }
+        .row-snake { background-color: #ede9fe; /* Purple - using a light purple */ }
+
+        .winner-cell {
+            background-color: #a7f3d0; /* Light green for winner */
+            font-weight: bold;
+        }
+
+        /* Styles for the restart button */
+        #restart-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: #6b7280; /* Gray color */
+            color: white;
+            padding: 10px;
+            border-radius: 50%; /* Make it round */
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            z-index: 5; /* Ensure it's above most content */
+        }
+        #restart-button:hover {
+            background-color: #4b5563; /* Darker gray on hover */
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button id="restart-button" title="Restart Game">
+            <i class="fas fa-sync-alt"></i> </button>
+
+        <div id="player-setup" class="mb-8">
+            <h2 class="text-2xl font-bold mb-4">Create Players</h2>
+            <div class="flex mb-4">
+                <input type="text" id="player-name-input" placeholder="Enter player name" class="flex-grow p-2 border rounded-l-md">
+                <button id="add-player-button" class="bg-blue-500 text-white p-2 rounded-r-md hover:bg-blue-600">Add Player</button>
+            </div>
+            <div id="player-list" class="mb-4">
+                </div>
+            <button id="start-game-button" class="bg-green-500 text-white p-3 rounded-md w-full hover:bg-green-600 disabled:opacity-50" disabled>Start Game</button>
+        </div>
+
+        <div id="game-area" class="hidden">
+            <h2 id="current-player-name" class="text-3xl font-bold text-center mb-6"></h2>
+
+            <div id="animal-grid" class="flex flex-wrap justify-center">
+                </div>
+
+            <div id="score-input-area" class="hidden score-input-area">
+                <h3 class="text-xl mb-3">Enter Score for <span id="selected-animal-name" class="font-semibold"></span>:</h3>
+                <input type="number" id="score-input" value="0" min="0" max="28" readonly>
+
+                <div id="keypad-popup" class="keypad-popup hidden">
+                    <button>1</button>
+                    <button>2</button>
+                    <button>3</button>
+                    <button>4</button>
+                    <button>5</button>
+                    <button>6</button>
+                    <button>7</button>
+                    <button>8</button>
+                    <button>9</button>
+                    <button class="key-clear">C</button>
+                    <button>0</button>
+                    <button class="key-backspace"><i class="fas fa-backspace"></i></button>
+                </div>
+
+                <button id="done-button" class="bg-purple-500 text-white p-3 rounded-md w-full mt-6 hover:bg-purple-600 disabled:opacity-50" disabled>Done</button>
+            </div>
+
+            <button id="show-scoresheet-button" class="bg-gray-500 text-white p-3 rounded-md w-full mt-6 hover:bg-gray-600">Show Scoresheet</button>
+        </div>
+
+        <div id="scoresheet-area" class="hidden">
+            <h2 class="text-2xl font-bold text-center mb-4">Scoresheet</h2>
+            <div id="scoresheet-table-container" class="overflow-x-auto">
+                 </div>
+
+            <button id="scoresheet-action-button" class="bg-blue-500 text-white p-3 rounded-md w-full mt-6 hover:bg-blue-600"></button>
+        </div>
+    </div>
+
+    <script>
+        // Get references to HTML elements
+        const playerSetupDiv = document.getElementById('player-setup');
+        const playerNameInput = document.getElementById('player-name-input');
+        const addPlayerButton = document.getElementById('add-player-button');
+        const playerListDiv = document.getElementById('player-list');
+        const startGameButton = document.getElementById('start-game-button');
+
+        const gameAreaDiv = document.getElementById('game-area');
+        const currentPlayerNameH2 = document.getElementById('current-player-name');
+        const animalGridDiv = document.getElementById('animal-grid');
+        const scoreInputAreaDiv = document.getElementById('score-input-area');
+        const selectedAnimalNameSpan = document.getElementById('selected-animal-name');
+        const scoreInput = document.getElementById('score-input'); // Get the score input field
+        const keypadPopup = document.getElementById('keypad-popup'); // Get the keypad popup div
+        const doneButton = document.getElementById('done-button');
+        const showScoresheetButton = document.getElementById('show-scoresheet-button');
+
+        const scoresheetAreaDiv = document.getElementById('scoresheet-area');
+        const scoresheetTableContainerDiv = document.getElementById('scoresheet-table-container');
+        const scoresheetActionButton = document.getElementById('scoresheet-action-button');
+
+        const restartButton = document.getElementById('restart-button'); // Get the restart button
+
+        // Game state variables
+        let players = [];
+        let scores = {}; // { playerName: { animalName: score, ... }, ... }
+        let animalsUsed = {}; // { playerName: [animalName, ...], ... }
+        let selectedIndex = 0; // Track current player index
+        let selectedAnimal = null;
+        let gameEnded = false;
+        let draggedItem = null; // To keep track of the element being dragged
+
+        // Local Storage Key
+        const PLAYERS_STORAGE_KEY = 'sausageSizzlePlayers';
+
+        // Animal data with updated colors and Quokka image
+        const animals = [
+            { name: 'Crocodile', color: '#10b981', image: '🐊' }, // Green
+            { name: 'Echidna', color: '#3b82f6', image: '🦔' },   // Blue
+            { name: 'Kangaroo', color: '#fbd38d', image: '🦘' }, // Brown
+            { name: 'Quokka', color: '#f59e0b', image: '🐻' }, // Yellow, Bear image
+            { name: 'Platypus', color: '#fbcfe8', image: '🦆' }, // Pink
+            { name: 'Snake', color: '#ede9fe', image: '🐍' }    // Purple
+        ];
+
+        // --- Local Storage Functions ---
+
+        // Save players array to local storage
+        function savePlayers() {
+            localStorage.setItem(PLAYERS_STORAGE_KEY, JSON.stringify(players));
+        }
+
+        // Load players array from local storage
+        function loadPlayers() {
+            const storedPlayers = localStorage.getItem(PLAYERS_STORAGE_KEY);
+            if (storedPlayers) {
+                players = JSON.parse(storedPlayers);
+            }
+        }
+
+        // --- Step 1: Create Players ---
+
+        // Add player button click handler
+        addPlayerButton.addEventListener('click', () => {
+            const playerName = playerNameInput.value.trim();
+            if (playerName && !players.includes(playerName)) {
+                players.push(playerName);
+                displayPlayers();
+                savePlayers(); // Save players after adding
+                playerNameInput.value = '';
+                // Enable start game button if there are players
+                startGameButton.disabled = players.length === 0;
+            } else if (players.includes(playerName)) {
+                alert('Player name already exists!'); // Use alert for simplicity, could use a modal
+            }
+        });
+
+        // Allow adding player by pressing Enter in the input field
+        playerNameInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                addPlayerButton.click();
+            }
+        });
+
+        // Display players in the list with delete and drag functionality
+        function displayPlayers() {
+            playerListDiv.innerHTML = '';
+            players.forEach((player, index) => {
+                const playerElement = document.createElement('div');
+                playerElement.classList.add('player-item');
+                playerElement.setAttribute('draggable', true); // Make element draggable
+                playerElement.dataset.playerName = player; // Store player name in data attribute
+
+                const playerNameSpan = document.createElement('span');
+                playerNameSpan.textContent = player;
+                playerElement.appendChild(playerNameSpan);
+
+                const deleteButton = document.createElement('button');
+                deleteButton.classList.add('delete-button');
+                deleteButton.innerHTML = '<i class="fas fa-times-circle"></i>'; // Font Awesome delete icon
+                deleteButton.addEventListener('click', (event) => {
+                    event.stopPropagation(); // Prevent drag event when clicking delete
+                    deletePlayer(player);
+                });
+                playerElement.appendChild(deleteButton);
+
+                playerListDiv.appendChild(playerElement);
+            });
+            addDragDropListeners(); // Add listeners after displaying players
+        }
+
+        // Delete a player from the list
+        function deletePlayer(playerName) {
+            players = players.filter(player => player !== playerName);
+            displayPlayers(); // Re-render the list
+            savePlayers(); // Save players after deleting
+            startGameButton.disabled = players.length === 0; // Update button state
+        }
+
+        // Add drag and drop event listeners to player list items
+        function addDragDropListeners() {
+            const playerItems = playerListDiv.querySelectorAll('.player-item');
+            playerItems.forEach(item => {
+                item.addEventListener('dragstart', handleDragStart);
+                item.addEventListener('dragover', handleDragOver);
+                item.addEventListener('dragleave', handleDragLeave);
+                item.addEventListener('drop', handleDrop);
+                item.addEventListener('dragend', handleDragEnd);
+            });
+        }
+
+        function handleDragStart(event) {
+            draggedItem = event.target;
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', event.target.dataset.playerName); // Data to transfer (not strictly needed for reordering in the same list, but good practice)
+            setTimeout(() => {
+                draggedItem.classList.add('dragging'); // Add dragging class after a short delay
+            }, 0);
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault(); // Necessary to allow dropping
+            event.dataTransfer.dropEffect = 'move';
+            const targetItem = event.target.closest('.player-item');
+            if (targetItem && targetItem !== draggedItem) {
+                // Add a visual indicator for the drop position (optional)
+                // For simplicity, we won't add visual indicators here, but you could add a border or background change.
+            }
+        }
+
+         function handleDragLeave(event) {
+             // Remove any visual indicators if added in dragover
+         }
+
+
+        function handleDrop(event) {
+            event.preventDefault();
+            const targetItem = event.target.closest('.player-item');
+            if (targetItem && targetItem !== draggedItem) {
+                const targetIndex = Array.from(playerListDiv.children).indexOf(targetItem);
+                const draggedIndex = Array.from(playerListDiv.children).indexOf(draggedItem);
+
+                // Rearrange the players array based on the drop
+                const [removed] = players.splice(draggedIndex, 1);
+                players.splice(targetIndex, 0, removed);
+
+                displayPlayers(); // Re-render the list with the new order
+                savePlayers(); // Save players after reordering
+            }
+        }
+
+        function handleDragEnd() {
+            draggedItem.classList.remove('dragging'); // Remove dragging class
+            draggedItem = null; // Reset dragged item
+        }
+
+
+        // --- Step 2: Start Game ---
+
+        // Start game button click handler
+        startGameButton.addEventListener('click', () => {
+            if (players.length > 0) {
+                initializeGame();
+                showGameArea();
+                startTurn();
+            }
+        });
+
+        // Initialize game state
+        function initializeGame() {
+            scores = {};
+            animalsUsed = {};
+            players.forEach(player => {
+                scores[player] = {};
+                animalsUsed[player] = [];
+            });
+            selectedIndex = 0; // Reset player index
+            gameEnded = false;
+            selectedAnimal = null;
+            scoreInput.value = 0; // Reset score input field
+            doneButton.disabled = true; // Disable done button initially
+            keypadPopup.classList.add('hidden'); // Ensure keypad is hidden on game start
+        }
+
+        // Show the game area and hide player setup
+        function showGameArea() {
+            playerSetupDiv.classList.add('hidden');
+            scoresheetAreaDiv.classList.add('hidden');
+            gameAreaDiv.classList.remove('hidden');
+        }
+
+        // --- Step 3: Start Turn ---
+
+        // Start a new turn for the current player
+        function startTurn() {
+            const currentPlayer = players[selectedIndex];
+            currentPlayerNameH2.textContent = currentPlayer + "'s Turn";
+            displayAnimalGrid();
+            scoreInputAreaDiv.classList.add('hidden'); // Hide score input initially
+            selectedAnimal = null; // Reset selected animal
+            scoreInput.value = 0; // Reset score input field
+            doneButton.disabled = true; // Disable done button initially
+            keypadPopup.classList.add('hidden'); // Ensure keypad is hidden at the start of a turn
+        }
+
+        // Display the grid of animal circles
+        function displayAnimalGrid() {
+            animalGridDiv.innerHTML = ''; // Clear previous grid
+            const currentPlayer = players[selectedIndex];
+            const usedAnimalsForPlayer = animalsUsed[currentPlayer] || [];
+
+            animals.forEach(animal => {
+                const animalCircle = document.createElement('div');
+                animalCircle.classList.add('animal-circle', 'flex-shrink-0');
+                animalCircle.style.backgroundColor = animal.color;
+                animalCircle.dataset.animalName = animal.name;
+
+                // Check if animal is used by the current player
+                const isUsed = usedAnimalsForPlayer.includes(animal.name);
+                if (isUsed) {
+                    animalCircle.classList.add('used');
+                } else {
+                    // Add click listener only if not used
+                    animalCircle.addEventListener('click', () => selectAnimal(animal.name, animalCircle));
+                }
+
+                // Add animal image/emoji
+                const animalImage = document.createElement('span');
+                animalImage.textContent = animal.image;
+                animalImage.classList.add('text-4xl'); // Adjust size as needed
+                animalCircle.appendChild(animalImage);
+
+                animalGridDiv.appendChild(animalCircle);
+            });
+        }
+
+        // --- Step 4: Perform Turn ---
+
+        // Handle animal selection
+        function selectAnimal(animalName, animalCircleElement) {
+            // If an animal is already selected and it's not the current one, deselect it
+            if (selectedAnimal && selectedAnimal !== animalName) {
+                const previousSelectedCircle = animalGridDiv.querySelector(`.animal-circle.selected`);
+                if (previousSelectedCircle) {
+                     // Remove flipping class after animation is done
+                    previousSelectedCircle.classList.remove('selected', 'flipping');
+                     previousSelectedCircle.style.transform = 'rotateY(0deg)'; // Reset rotation
+                }
+            }
+
+            // If the clicked animal is already selected, deselect it
+            if (selectedAnimal === animalName) {
+                 animalCircleElement.classList.remove('selected', 'flipping');
+                  animalCircleElement.style.transform = 'rotateY(0deg)'; // Reset rotation
+                 selectedAnimal = null;
+                 scoreInputAreaDiv.classList.add('hidden'); // Hide score input
+                 doneButton.disabled = true;
+                 scoreInput.value = 0; // Reset score input
+                 keypadPopup.classList.add('hidden'); // Hide keypad
+            } else {
+                 // Select the new animal
+                selectedAnimal = animalName;
+                animalCircleElement.classList.add('selected', 'flipping');
+                selectedAnimalNameSpan.textContent = selectedAnimal;
+                scoreInputAreaDiv.classList.remove('hidden'); // Show score input
+                scoreInput.value = 0; // Reset score input for the new animal
+                doneButton.disabled = false; // Enable done button once an animal is selected
+                 keypadPopup.classList.add('hidden'); // Hide keypad when a new animal is selected
+            }
+        }
+
+        // Show keypad when score input is clicked
+        scoreInput.addEventListener('click', () => {
+            if (selectedAnimal !== null) { // Only show keypad if an animal is selected
+                keypadPopup.classList.remove('hidden');
+            }
+        });
+
+        // Handle keypad button clicks
+        keypadPopup.addEventListener('click', (event) => {
+            const target = event.target;
+            // Ensure the click is on a button or within a button
+            if (target.tagName === 'BUTTON' || target.closest('button')) {
+                 const button = target.tagName === 'BUTTON' ? target : target.closest('button');
+                const action = button.textContent.trim(); // Use textContent and trim for action
+                let currentValue = scoreInput.value;
+
+                if (action >= '0' && action <= '9') {
+                    // Append number, but don't exceed 28
+                    const newValue = currentValue === '0' ? action : currentValue + action;
+                    if (parseInt(newValue) <= 28) {
+                         scoreInput.value = parseInt(newValue).toString(); // Convert to int and back to string to handle leading zeros
+                    } else {
+                         scoreInput.value = 28; // Cap at 28
+                    }
+                } else if (action === 'C') {
+                    // Clear
+                    scoreInput.value = 0;
+                } else if (button.classList.contains('key-backspace')) {
+                    // Backspace
+                    if (currentValue.length > 1) {
+                        scoreInput.value = currentValue.slice(0, -1);
+                    } else {
+                        scoreInput.value = 0;
+                    }
+                }
+                 // After any keypad input, update the current score
+                 // currentScore = parseInt(scoreInput.value); // No need to update currentScore here, it's read on Done
+            }
+        });
+
+        // Hide keypad when clicking outside of it
+        document.addEventListener('click', (event) => {
+            const isClickInsideScoreInputArea = scoreInputAreaDiv.contains(event.target);
+            const isClickInsideKeypad = keypadPopup.contains(event.target);
+            const isClickOnScoreInput = event.target === scoreInput;
+
+
+            if (!isClickInsideScoreInputArea && !isClickInsideKeypad && !isClickOnScoreInput) {
+                keypadPopup.classList.add('hidden');
+            }
+        });
+
+
+        // Handle "Done" button click
+        doneButton.addEventListener('click', () => {
+            if (selectedAnimal !== null) { // Check if an animal is selected
+                const currentPlayer = players[selectedIndex];
+
+                // Get the score from the input field
+                const score = parseInt(scoreInput.value);
+
+                 // Validate score is within range (should be handled by input max/min, but good to double check)
+                if (score >= 0 && score <= 28) {
+                    // Save the score
+                    scores[currentPlayer][selectedAnimal] = score;
+
+                    // Mark the animal as used for the current player
+                    animalsUsed[currentPlayer].push(selectedAnimal);
+
+                    // Move to the next player
+                    selectedIndex = (selectedIndex + 1) % players.length;
+
+                    // Check if the game has ended (all players have used all animals)
+                    const nextPlayer = players[selectedIndex];
+                    // Check if the next player exists and if they have used all animals
+                    if (nextPlayer && animalsUsed[nextPlayer] && animalsUsed[nextPlayer].length === animals.length) {
+                         endGame();
+                    } else {
+                        startTurn(); // Start turn for the next player
+                    }
+                     keypadPopup.classList.add('hidden'); // Hide keypad after done
+                } else {
+                     alert('Please enter a score between 0 and 28.'); // Basic validation message
+                }
+            }
+        });
+
+        // --- Step 6: End Game ---
+
+        // End the game
+        function endGame() {
+            gameEnded = true;
+            displayScoresheet();
+        }
+
+        // --- Step 7: Scoresheet ---
+
+        // Show scoresheet button click handler
+        showScoresheetButton.addEventListener('click', () => {
+            displayScoresheet();
+        });
+
+        // Display the scoresheet
+        function displayScoresheet() {
+            gameAreaDiv.classList.add('hidden');
+            scoresheetAreaDiv.classList.remove('hidden');
+
+            const scoresheetTable = document.createElement('table');
+            scoresheetTable.classList.add('scoresheet-table');
+
+            // Create table header
+            let headerRow = '<tr><th>Animal</th>';
+            players.forEach(player => {
+                headerRow += `<th>${player}</th>`;
+            });
+            headerRow += '</tr>';
+            scoresheetTable.innerHTML += headerRow;
+
+            // Create table body
+            const playerTotals = {};
+            players.forEach(player => playerTotals[player] = 0);
+
+            animals.forEach(animal => {
+                let row = `<tr class="row-${animal.name.toLowerCase()}"><td>${animal.image} ${animal.name}</td>`;
+                players.forEach(player => {
+                    const score = scores[player][animal.name] || 0;
+                    row += `<td>${score}</td>`;
+                    playerTotals[player] += score; // Still calculate total for winner highlighting
+                });
+                row += '</tr>';
+                scoresheetTable.innerHTML += row;
+            });
+
+            // Add total row at the bottom
+            let totalRow = '<tr class="total-row"><td>Total</td>';
+            players.forEach(player => {
+                totalRow += `<td>${playerTotals[player]}</td>`;
+            });
+            totalRow += '</tr>';
+            scoresheetTable.innerHTML += totalRow;
+
+            // Highlight the winner if the game has ended
+            if (gameEnded) {
+                let winningScore = -1;
+                // Find the highest score
+                players.forEach(player => {
+                    if (playerTotals[player] > winningScore) {
+                        winningScore = playerTotals[player];
+                    }
+                });
+
+                // Find all players with the winning score
+                const winners = players.filter(player => playerTotals[player] === winningScore);
+
+                if (winners.length > 0) {
+                    const totalCells = scoresheetTable.querySelectorAll('.total-row td');
+                    // Note: totalCells now includes the 'Total' label cell at index 0
+                    players.forEach((player, index) => {
+                        if (winners.includes(player)) {
+                            // Highlight the winner(s)'s total cell (index + 1 because of the 'Total' header cell)
+                            totalCells[index + 1].classList.add('winner-cell');
+                        }
+                    });
+                     // Update scoresheet action button for new game
+                    scoresheetActionButton.textContent = 'New Game';
+                    scoresheetActionButton.removeEventListener('click', returnToGame); // Remove old listener
+                    scoresheetActionButton.addEventListener('click', newGame); // Add new listener
+                }
+            } else {
+                 // Update scoresheet action button for returning to game
+                scoresheetActionButton.textContent = 'Return to Game';
+                 scoresheetActionButton.removeEventListener('click', newGame); // Remove old listener
+                scoresheetActionButton.addEventListener('click', returnToGame); // Add new listener
+            }
+
+
+            scoresheetTableContainerDiv.innerHTML = ''; // Clear previous table
+            scoresheetTableContainerDiv.appendChild(scoresheetTable);
+        }
+
+        // Return to game view
+        function returnToGame() {
+            scoresheetAreaDiv.classList.add('hidden');
+            gameAreaDiv.classList.remove('hidden');
+        }
+
+        // Start a new game (retains players, resets scores and state)
+        function newGame() {
+            // Players array is NOT cleared here, retaining names from the previous game
+            scores = {};
+            animalsUsed = {};
+            selectedIndex = 0; // Reset player index
+            gameEnded = false;
+            selectedAnimal = null;
+            currentScore = 0; // Reset current score variable
+
+            displayPlayers(); // Re-display players with delete/drag options
+
+            playerNameInput.value = ''; // Clear input field
+            startGameButton.disabled = players.length === 0; // Update button state
+
+            scoresheetAreaDiv.classList.add('hidden');
+            playerSetupDiv.classList.remove('hidden'); // Show player setup again
+             keypadPopup.classList.add('hidden'); // Ensure keypad is hidden
+        }
+
+        // Handle restart button click
+        restartButton.addEventListener('click', () => {
+            // Reset game state but keep players
+            scores = {};
+            animalsUsed = {};
+            selectedIndex = 0; // Reset player index
+            gameEnded = false;
+            selectedAnimal = null;
+            currentScore = 0; // Reset current score variable
+
+            // Hide game and scoresheet areas
+            gameAreaDiv.classList.add('hidden');
+            scoresheetAreaDiv.classList.add('hidden');
+
+            // Show player setup area
+            playerSetupDiv.classList.remove('hidden');
+
+            // Ensure keypad is hidden
+            keypadPopup.classList.add('hidden');
+
+            // Reset score input field
+            scoreInput.value = 0;
+
+            // Update start game button state
+            startGameButton.disabled = players.length === 0;
+
+            // Re-display players (already loaded from local storage)
+            displayPlayers();
+        });
+
+
+        // --- Initialization ---
+        loadPlayers(); // Load players from local storage on app start
+        displayPlayers(); // Display the loaded players
+
+    </script>
+</body>
+</html>
