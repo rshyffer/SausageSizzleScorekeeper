@@ -1,11 +1,17 @@
 {
   "name": "Sausage Sizzle Score",
   "short_name": "SizzleScore",
+  "id": "0001"
   "description": "A simple tool to track scores for your sausage sizzle game.",
   "start_url": "/SausageSizzle.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#10b981",
+  "orientation": "portrait",
+  "categories": [
+    "entertainment",
+    "games"
+  ]
   "icons": [
     {
       "src": "/images/icons/icon-72x72.png",
