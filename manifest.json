@@ -1,7 +1,7 @@
 {
   "name": "Sausage Sizzle Score",
   "short_name": "SizzleScore",
-  "id": "0001"
+  "id": "0001",
   "description": "A simple tool to track scores for your sausage sizzle game.",
   "start_url": "/SausageSizzle.html",
   "display": "standalone",
