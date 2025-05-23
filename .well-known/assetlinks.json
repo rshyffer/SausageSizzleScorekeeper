@@ -1,1 +1,8 @@
-
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.netlify.clever_nougat_5755cb.twa",
+        "sha256_cert_fingerprints": ["3C:E7:D7:F8:EB:5F:14:FF:0C:AF:F6:E7:5C:0A:86:49:24:E6:A6:AD:96:06:06:52:DB:A9:E1:70:DF:8E:A5:8E"]
+      }
+    }]
