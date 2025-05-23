@@ -2,8 +2,8 @@ const CACHE_NAME = 'sausage-sizzle-cache-v1';
 const urlsToCache = [
   '/',
   '/SausageSizzle.html',
-  '/https://cdn.tailwindcss.com',
-  '/https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css',
+  '/tailwind.min.js',
+  '/all.min.css',
   '/images/icons/icon-72x72.png',
   '/images/icons/icon-96x96.png',
   '/images/icons/icon-128x128.png',
