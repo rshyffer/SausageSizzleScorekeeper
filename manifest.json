@@ -7,6 +7,10 @@
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#10b981",
+  "categories": [
+    "entertainment",
+    "games"
+  ]
   "icons": [
     {
       "src": "/images/icons/icon-72x72.png",
