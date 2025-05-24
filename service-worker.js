@@ -9,7 +9,13 @@ const urlsToCache = [
   '/images/icons/icon-152x152.png',
   '/images/icons/icon-192x192.png',
   '/images/icons/icon-384x384.png',
-  '/images/icons/icon-512x512.png'
+  '/images/icons/icon-512x512.png',
+  '/dice/crocodile.png',
+  '/dice/echidna.png',
+  '/dice/kangaroo.png',
+  '/dice/platypus.png',
+  '/dice/quokka.png',
+  '/dice/skane.png'
 ];
 
 // Install event: cache assets
