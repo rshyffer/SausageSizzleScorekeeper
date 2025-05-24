@@ -50,13 +50,14 @@
         }
          .animal-circle.flipping {
             animation: flip 0.6s ease forwards; /* Animation for flipping */
+            filter: grayscale(100%); /* Black and white for used animals */
         }
         @keyframes flip {
             0% { transform: rotateY(0deg); }
             100% { transform: rotateY(180deg); }
         }
         .animal-circle.used {
-            filter: grayscale(100%); /* Black and white for used animals */
+            filter: grayscale(60%) brightness(0.5); /* Black and white for used animals */
             cursor: not-allowed; /* Indicate not clickable */
         }
         .animal-circle img {
@@ -181,12 +182,12 @@
             background-color: #e5e7eb; /* Distinct background for total row */
         }
          /* Background colors for rows based on animal */
-        .row-crocodile { background-color: #dcfce7; /* Green */ }
-        .row-echidna { background-color: #e0f2fe; /* Blue */ }
-        .row-kangaroo { background-color: #fbd38d; /* Brown - using a different brown */ }
+        .row-crocodile { background-color: #03ae3f; /* Green */ }
+        .row-echidna { background-color: #1885ce; /* Blue */ }
+        .row-kangaroo { background-color: #cf9d46; /* Brown - using a different brown */ }
         .row-quokka { background-color: #fef08a; /* Yellow */ }
         .row-platypus { background-color: #fbcfe8; /* Pink - using a light pink */ }
-        .row-snake { background-color: #ede9fe; /* Purple - using a light purple */ }
+        .row-snake { background-color: #7d68da; /* Purple - using a light purple */ }
 
         .winner-cell {
             background-color: #a7f3d0; /* Light green for winner */
@@ -310,14 +311,13 @@
         // Local Storage Key
         const PLAYERS_STORAGE_KEY = 'sausageSizzlePlayers';
 
-        // Animal data with updated colors and Quokka image
         const animals = [
-            { name: 'Crocodile', color: '#10b981', image: '🐊' }, // Green
-            { name: 'Echidna', color: '#3b82f6', image: '🦔' },   // Blue
-            { name: 'Kangaroo', color: '#fbd38d', image: '🦘' }, // Brown
-            { name: 'Quokka', color: '#f59e0b', image: '🐻' }, // Yellow, Bear image
-            { name: 'Platypus', color: '#fbcfe8', image: '🦆' }, // Pink
-            { name: 'Snake', color: '#ede9fe', image: '🐍' }    // Purple
+            { name: 'Crocodile', color: '#10b981', image: 'images/dice/crocodile.png' }, // Green
+            { name: 'Echidna', color: '#3b82f6', image: 'images/dice/echidna.png' },   // Blue
+            { name: 'Kangaroo', color: '#9e7a3a', image: 'images/dice/kangaroo.png' }, // Brown
+            { name: 'Quokka', color: '#f5c20b', image: 'images/dice/quokka.png' }, // Yellow
+            { name: 'Platypus', color: '#fbcfe8', image: 'images/dice/platypus.png' }, // Pink
+            { name: 'Snake', color: '#ede9fe', image: 'images/dice/snake.png' }    // Purple
         ];
 
         // --- Local Storage Functions ---
@@ -521,10 +521,10 @@
                     animalCircle.addEventListener('click', () => selectAnimal(animal.name, animalCircle));
                 }
 
-                // Add animal image/emoji
-                const animalImage = document.createElement('span');
-                animalImage.textContent = animal.image;
-                animalImage.classList.add('text-4xl'); // Adjust size as needed
+                // Add animal image
+                const animalImage = document.createElement('img');
+                animalImage.src = animal.image;
+                animalImage.alt = animal.name;
                 animalCircle.appendChild(animalImage);
 
                 animalGridDiv.appendChild(animalCircle);
@@ -689,11 +689,14 @@
             players.forEach(player => playerTotals[player] = 0);
 
             animals.forEach(animal => {
-                let row = `<tr class="row-${animal.name.toLowerCase()}"><td>${animal.image} ${animal.name}</td>`;
+                let row = `<tr class="row-${animal.name.toLowerCase()}"><td style="white-space:nowrap; padding:4px 8px;">
+                    <img src="${animal.image}" alt="${animal.name}" style="width:24px; height:24px; vertical-align:middle; margin-right:4px; display:inline-block;">
+                    <span style="vertical-align:middle;">${animal.name}</span>
+                </td>`;
                 players.forEach(player => {
                     const score = scores[player][animal.name] || 0;
-                    row += `<td>${score}</td>`;
-                    playerTotals[player] += score; // Still calculate total for winner highlighting
+                    row += `<td style="padding:4px 8px;">${score}</td>`;
+                    playerTotals[player] += score;
                 });
                 row += '</tr>';
                 scoresheetTable.innerHTML += row;
@@ -806,6 +809,8 @@
         // --- Initialization ---
         loadPlayers(); // Load players from local storage on app start
         displayPlayers(); // Display the loaded players
+        // Enable start game button if there are players
+        startGameButton.disabled = players.length === 0;
 
         // Register Service Worker
         if ('serviceWorker' in navigator) {
